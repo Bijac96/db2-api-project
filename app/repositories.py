@@ -7,7 +7,6 @@ from app.models import Author, Book
 class AuthorRepository(SQLAlchemySyncRepository[Author]):
     model_type = Author
 
-
 async def provide_authors_repo(db_session: Session):
     return AuthorRepository(session=db_session, auto_commit=True)
 
