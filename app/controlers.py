@@ -12,13 +12,19 @@ from app.dtos import (
     BookReadFullDTO,
     BookWriteDTO,
     BookUpdateDTO,
+    ClientReadDTO,
+    ClientReadFullDTO,
+    ClientUpdateDTO,
+    ClientWriteDTO,
 )
-from app.models import Author, Book
+from app.models import Author, Book, Client
 from app.repositories import (
     AuthorRepository,
     BookRepository,
+    ClientRepository,
     provide_authors_repo,
     provide_books_repo,
+    provide_clients_repo,
 )
 from sqlalchemy.orm import Session
 
@@ -47,7 +53,6 @@ class AuthorController(Controller):
         except NotFoundError:
             raise HTTPException(status_code=404, detail="El autor no existe")
             
-
     @patch("/{author_id:int}", dto=AuthorUpdateDTO)
     async def update_author(
         self, author_id: int, data: DTOData[Author], authors_repo: AuthorRepository
@@ -68,12 +73,7 @@ class BookController(Controller):
     tags = ["books"]
     return_dto = BookReadDTO
     dependencies = {"books_repo": Provide(provide_books_repo)}
-    # En resumen, esta línea establece que el controlador 
-    # BookController depende de un repositorio de libros 
-    # (books_repo) que será proporcionado por la función 
-    # provide_books_repo. Este enfoque facilita la inyección 
-    # de dependencias y hace que el controlador sea más modular 
-    # y fácil de probar.
+
     @get()
     async def list_books(self, books_repo: BookRepository) -> list[Book]:
         return books_repo.list()
@@ -101,10 +101,10 @@ class BookController(Controller):
             if not book:
                 raise ValueError("El libro no existe")
             book = data.update_instance(book)
+            books_repo.add(book)
             return book
         except NotFoundError:
             raise HTTPException(status_code=404, detail="El libro no existe")
-
 
     @get("/search", return_dto=BookReadFullDTO)
     async def get_book_by_title(
@@ -117,4 +117,43 @@ class BookController(Controller):
             return books
         except NotFoundError as e:
             raise HTTPException(status_code=404, detail=str(e))
+        
+        
+class ClientController(Controller):
+    path = "/clients"
+    tags = ["clients"]
+    return_dto = ClientReadDTO
+    dependencies = {"clients_repo": Provide(provide_clients_repo)}
+
+    @get()
+    async def list_clients(self, clients_repo: ClientRepository) -> list[Client]:
+        return clients_repo.list()
+
+    @post(dto=ClientWriteDTO)
+    async def create_client(self, data: Client, clients_repo: ClientRepository) -> Client:
+        return clients_repo.add(data)
+    
+    @get("/{client_id:int}", return_dto=ClientReadFullDTO)
+    async def get_client(self, client_id: int, clients_repo: ClientRepository) -> Client:
+        try:
+            client = clients_repo.get(client_id)
+            if not client:
+                raise ValueError("El cliente no existe")
+            return client
+        except NotFoundError:
+            raise HTTPException(status_code=404, detail="El cliente no existe")
+    
+    @patch("/{client_id:int}", dto=ClientUpdateDTO)
+    async def update_client(
+        self, client_id: int, data: DTOData[Client], clients_repo: ClientRepository
+    ) -> Client:
+        try:
+            client = clients_repo.get(client_id)
+            if not client:
+                raise ValueError("El cliente no existe")
+            client = data.update_instance(client)
+            clients_repo.add(client)
+            return client
+        except NotFoundError:
+            raise HTTPException(status_code=404, detail="El cliente no existe")
 

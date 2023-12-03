@@ -32,7 +32,7 @@ class Author(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
-    biography: Mapped[Optional[str]]
+   
     date_of_birth: Mapped[Optional[date]]
 
     # relationships
@@ -56,3 +56,20 @@ class BookCategory(Base):
 
     book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), primary_key=True)
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), primary_key=True)
+
+class Client(Base):
+    __tablename__ = "clients"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(index=True)
+    email: Mapped[str] = mapped_column(index=True, unique=True)
+    phone: Mapped[Optional[str]]
+    address: Mapped[Optional[str]]
+    registration_date: Mapped[date]
+    
+    
+    # relationships
+    # author: "Mapped[Author]" = relationship(back_populates="books")
+    # categories: "Mapped[list[Category]]" = relationship(
+    #     back_populates="books", secondary="books_categories"
+    # )
