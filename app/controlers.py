@@ -3,7 +3,6 @@ from litestar.di import Provide
 from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
 from advanced_alchemy.exceptions import NotFoundError 
-
 from app.dtos import (
     AuthorReadDTO,
     AuthorReadFullDTO,
@@ -21,6 +20,7 @@ from app.repositories import (
     provide_authors_repo,
     provide_books_repo,
 )
+from sqlalchemy.orm import Session
 
 
 class AuthorController(Controller):
@@ -57,6 +57,7 @@ class AuthorController(Controller):
             if not author:
                 raise ValueError("El autor no existe")
             author = data.update_instance(author)
+            authors_repo.add(author)
             return author
         except NotFoundError:
             raise HTTPException(status_code=404, detail="El autor no existe")
@@ -67,7 +68,12 @@ class BookController(Controller):
     tags = ["books"]
     return_dto = BookReadDTO
     dependencies = {"books_repo": Provide(provide_books_repo)}
-
+    # En resumen, esta línea establece que el controlador 
+    # BookController depende de un repositorio de libros 
+    # (books_repo) que será proporcionado por la función 
+    # provide_books_repo. Este enfoque facilita la inyección 
+    # de dependencias y hace que el controlador sea más modular 
+    # y fácil de probar.
     @get()
     async def list_books(self, books_repo: BookRepository) -> list[Book]:
         return books_repo.list()
@@ -98,3 +104,17 @@ class BookController(Controller):
             return book
         except NotFoundError:
             raise HTTPException(status_code=404, detail="El libro no existe")
+
+
+    @get("/search", return_dto=BookReadFullDTO)
+    async def get_book_by_title(
+        self, title: str, books_repo: BookRepository
+        ) -> list[Book]:
+        try:
+            books = books_repo.search_by_title(title)
+            if not books:
+                raise NotFoundError("Libro no encontrado")
+            return books
+        except NotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
